@@ -1,0 +1,87 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    max-width:max-content;
+    margin: 0 auto;
+    border: 2px solid black;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.row {
+    display: flex;
+}
+
+.redCell {
+    width: 89px;
+    height: 89px;
+    border: 1px solid rgb(0, 0, 0);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: xx-large;
+    text-transform: capitalize;
+    cursor: pointer;
+    background-color: red;
+    font-weight: 900;
+}
+
+.blackCell {
+    width: 89px;
+    height: 89px;
+    border: 1px solid rgb(0, 0, 0);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: xx-large;
+    text-transform: capitalize;
+    cursor: pointer;
+    background-color: black;
+    font-weight: 900;
+}
+
+.selectedRedCell {
+    width: 87px;
+    height: 87px;
+    border: 2px solid rgb(216, 196, 13);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: xx-large;
+    text-transform: capitalize;
+    cursor: pointer;
+    background-color: red;
+    font-weight: 900;
+}
+
+.selectedBlackCell {
+    width: 87px;
+    height: 87px;
+    border: 2px solid rgb(216, 196, 13);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: xx-large;
+    text-transform: capitalize;
+    cursor: pointer;
+    background-color: black;
+    font-weight: 900;
+}
+
+.possibleMove {
+    width: 87px;
+    height: 87px;
+    border: 2px solid rgb(13, 77, 216);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: xx-large;
+    text-transform: capitalize;
+    cursor: pointer;
+    background-color: black;
+    font-weight: 900;
+}
