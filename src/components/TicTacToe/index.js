@@ -109,7 +109,6 @@ function TicTacToe() {
     }
     if(board.flat().every((cell) => cell !== "")) {
       setWinner("Draw");
-      console.log("Hello");
       return true;
     }
     setWinner(null);
