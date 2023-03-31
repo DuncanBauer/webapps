@@ -45,6 +45,8 @@ function Checkers() {
                   [new Piece('red'),null,new Piece('red'),null,new Piece('red'),null,new Piece('red'),null]]);
         setCpuTurn(false);
         setWinner(null);
+        setSelectedPiece({x: -1, y: -1});
+        setAvailableMoves([]);
     }
 
     function displayTurn() {
@@ -57,77 +59,114 @@ function Checkers() {
     }
 
     function selectPiece(row, column) {
-        // Clicked on one of your own pieces
-        if(board[row][column]?.color === players?.Player?.color) {
-            setSelectedPiece({x: row, y: column});
+        if(!cpuTurn) {
+            let moves = [];
 
-            // Calculate available moves
-            let actualMoves = [];
-            
-            if(board[row][column]?.name === 'King') {
-                let moves = [{x: row - 1, y: column - 1},
-                             {x: row - 1, y: column + 1},
-                             {x: row + 1, y: column - 1},
-                             {x: row + 1, y: column + 1}];
-    
-                for(let i = 0; i < 4; i++) {
-                    if(moves[i]?.x <= 7 && moves[i]?.x >= 0 &&
-                       moves[i]?.y <= 7 && moves[i]?.y >= 0 &&
-                       board[moves[i]?.x][moves[i]?.y] === null) {
-                        actualMoves.push({ x: moves[i].x, y: moves[i].y});
+            // Clicked on one of your own pieces
+            if(board[row][column]?.color === players?.Player?.color) {
+                setSelectedPiece({x: row, y: column});
+
+                // Calculate available moves
+                let actualMoves = [];
+                
+                if(board[row][column]?.name === 'King') {
+                    moves = [{x: row - 1, y: column - 1},
+                            {x: row - 1, y: column + 1},
+                            {x: row + 1, y: column - 1},
+                            {x: row + 1, y: column + 1}];
+        
+                    for(let i = 0; i < 4; i++) {
+                        if(moves[i]?.x <= 7 && moves[i]?.x >= 0 &&
+                        moves[i]?.y <= 7 && moves[i]?.y >= 0 &&
+                        board[moves[i]?.x][moves[i]?.y] === null) {
+                            actualMoves.push({ x: moves[i].x, y: moves[i].y});
+                        }
+                    }
+                } else if(board[row][column]?.name === 'Pawn') {
+                    moves = [{x: row - 1, y: column - 1},
+                                {x: row - 1, y: column + 1}];
+
+                    for(let i = 0; i < 2; i++) {
+                        if(moves[i]?.x <= 7 && moves[i]?.x >= 0 &&
+                        moves[i]?.y <= 7 && moves[i]?.y >= 0 &&
+                        board[moves[i]?.x][moves[i]?.y] === null) {
+                            actualMoves.push({ x: moves[i].x, y: moves[i].y});
+                        }
                     }
                 }
-            } else if(board[row][column]?.name === 'Pawn') {
-                let moves = [{x: row - 1, y: column - 1},
-                             {x: row - 1, y: column + 1}];
 
-                for(let i = 0; i < 2; i++) {
-                    if(moves[i]?.x <= 7 && moves[i]?.x >= 0 &&
-                       moves[i]?.y <= 7 && moves[i]?.y >= 0 &&
-                       board[moves[i]?.x][moves[i]?.y] === null) {
-                        actualMoves.push({ x: moves[i].x, y: moves[i].y});
-                    }
-                }
+                setAvailableMoves(actualMoves);
+            // If you clicked on an empty space that is a valid move
+            } else if(board[row][column] === null && availableMoves.some(move => move.x === row && move.y === column)) {
+                // Move the piece
+                movePiece(row, column);
+
+                // Clear available moves
+                setAvailableMoves([]);
             }
-
-            setAvailableMoves(actualMoves);
-        // If you clicked on an empty space that is a valid move
-        } else if(board[row][column] === null && availableMoves.some(move => move.x === row && move.y === column)) {
-            // Move the piece
-            movePiece(row, column);
-
-            // Clear available moves
-            setAvailableMoves([]);
         }
     }
 
     function movePiece(row, column) {
-        let tempBoard = board;
-        let piece = board[selectedPiece.x][selectedPiece.y];
+        if(!cpuTurn) {
+            let tempBoard = board;
+            let piece = board[selectedPiece.x][selectedPiece.y];
 
-        tempBoard[selectedPiece.x][selectedPiece.y] = null;
-        tempBoard[row][column] = piece;
+            tempBoard[selectedPiece.x][selectedPiece.y] = null;
+            tempBoard[row][column] = piece;
 
-        setBoard(tempBoard);
-        setSelectedPiece(null);
-        setCpuTurn(true);
-        checkWinner();
+            setBoard(tempBoard);
+            setSelectedPiece(null);
+            setCpuTurn(true);
+            checkWinner();
+        }
     }
 
     function cpuPlayFn() {
-        let blacks = board.flat().filter(piece => piece?.color === 'black');
-        let moves = {};
+        let blacks = board.flat()
+                          .filter(piece => piece?.color === 'black');
+        let moves = new Map();
        
-        for (const piece in blacks) {
-            moves[piece] = getMoves(piece);
+        for (let index = 0; index < blacks.length; index++) {
+            const piece = blacks[index];
+            const position = findPosition(piece);
+
+            moves.set(piece, getMoves(piece, position));
         }
 
-        let piecesAbleToMove = Array.from(moves.keys());
-        
-        let piece = piecesAbleToMove[Math.floor(Math.random() * (piecesAbleToMove.length - 1))];
+        let piecesAbleToMove = Array.from(moves.keys()).filter(value => moves.get(value).length > 0);
 
-        let move = moves[Math.floor(Math.random() * (moves[piece].length - 1))];
+        console.log(piecesAbleToMove);
+        let piece = piecesAbleToMove[Math.floor(Math.random() * (piecesAbleToMove.length - 1))];
+        console.log(piece);
+
+        let movesForPiece = moves.get(piece);
+        console.log(moves.get(piece));
+
+        let move = movesForPiece[Math.floor(Math.random() * (movesForPiece.length - 1))];
+
+        let tempBoard = board;
+        let pos = findPosition(piece);
+
+        if(pos) {
+            console.log("valid pos");
+            tempBoard[pos.x][pos.y] = null;
+            tempBoard[move.x][move.y] = piece;
+        }
+
+        setBoard(tempBoard);
         setCpuTurn(false);
+    }
+
+    function findPosition(piece) {
+        for(let i = 0; i < 8; i++) {
+            for(let j = 0; j < 8; j++) {
+                if(board[i][j] === piece) {
+                    return {x: i, y: j};
+                }
+            }
+        }
+        return null;
     }
 
     function getMoves(piece, position) {
@@ -148,9 +187,25 @@ function Checkers() {
         }
     
         for(let i = 0; i < moves.length; i++) {
-            // need to check opponent pieces for jump
-            if(moves[i]?.x <= 7 && moves[i]?.x >= 0 && moves[i]?.y <= 7 && moves[i]?.y >= 0 && board[moves[i]?.x][moves[i]?.y] === null) {
-                actualMoves.push({x: moves[i].x, y: moves[i].y});
+            const x = moves[i]?.x;
+            const y = moves[i]?.y;
+
+            // If we're moving to an open space
+            if(x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y] === null) {
+                actualMoves.push({x: x, y: y});
+            
+            // If the space has an opponent piece on it
+            } else if(x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y]?.color !== piece?.color) {
+                const dx = x - position.x > 0 ? 1 : -1; // determine the direction of the move
+                const dy = y - position.y > 0 ? 1 : -1;
+                
+                let jumpX = dx + x;
+                let jumpY = dy + y;
+
+                if(jumpX >= 0 && jumpX <= 7 && jumpY >= 0 && jumpY <= 7 && board[jumpX][jumpY] === null) {
+                    actualMoves.push({x: jumpX, y: jumpY});
+                    actualMoves.join(getMoves(piece, {jumpX, jumpY}));
+                }
             }
         }
 
@@ -158,15 +213,20 @@ function Checkers() {
     }
 
     function checkWinner() {
-        let reds = board.filter(piece => piece != null && piece?.color === 'red');
-        let blacks = board.filter(piece => piece != null && piece?.color === 'black');
+        let reds = board.flat()
+                        .filter(piece => piece?.color === "red");
+                        
+        let blacks = board.flat()
+                          .filter(piece => piece?.color === "black");
 
         if(reds.length <= 0) {
             setWinner('CPU');
+            return;
         }
 
         if(blacks.length <= 0) {
             setWinner('You');
+            return;
         }
     }
 
