@@ -52,6 +52,53 @@ function Checkers() {
         if(cpuTurn) return 'CPU';
         return 'You';
     }
+    
+    function findPosition(piece) {
+        for(let i = 0; i < 8; i++) {
+            for(let j = 0; j < 8; j++) {
+                if(board[i][j] === piece) {
+                    return {x: i, y: j};
+                }
+            }
+        }
+        return null;
+    }
+
+    function claimPiece(piece) {
+        let temp = board;
+        let pos = findPosition(piece);
+
+        if(pos) {
+            temp[pos.x][pos.y] = null;
+        }
+
+        setBoard(temp);
+    }
+
+    function kingMe(piece) {
+        let temp = board;
+        let pos = findPosition(piece);
+
+        temp[pos.x][pos.y].name = 'King';
+        temp[pos.x][pos.y].points = 2;
+
+        setBoard(temp);
+    }
+
+    function checkWinner() {
+        let reds = board.flat().filter(piece => piece?.color === 'red');
+        let blacks = board.flat().filter(piece => piece?.color === 'black');
+
+        if(reds.length <= 0) {
+            setWinner('CPU');
+            return;
+        }
+
+        if(blacks.length <= 0) {
+            setWinner('You');
+            return;
+        }
+    }
 
     function displayWinner() {
         return winner;
@@ -103,19 +150,10 @@ function Checkers() {
 
             setSelectedPiece(null);
             checkWinner();
-            setTimeout(() => setCpuTurn(true), 1000);
+            if(!winner) {
+                setTimeout(() => setCpuTurn(!cpuTurn), 500);
+            }
         }
-    }
-
-    function claimPiece(piece) {
-        let temp = board;
-        let pos = findPosition(piece);
-
-        if(pos) {
-            temp[pos.x][pos.y] = null;
-        }
-
-        setBoard(temp);
     }
 
     function cpuPlayFn() {
@@ -129,6 +167,11 @@ function Checkers() {
         }
 
         let piecesAbleToMove = Array.from(moves.keys()).filter(value => moves.get(value).length > 0 );
+        if(piecesAbleToMove.length <= 0) {
+            setWinner('You');
+            return;
+        }
+        
         let piece = piecesAbleToMove[Math.floor(Math.random() * (piecesAbleToMove.length - 1))];
         let movesForPiece = moves.get(piece);
         let move = movesForPiece[Math.floor(Math.random() * (movesForPiece.length - 1))];
@@ -155,20 +198,8 @@ function Checkers() {
         setCpuTurn(false);
     }
 
-    function findPosition(piece) {
-        for(let i = 0; i < 8; i++) {
-            for(let j = 0; j < 8; j++) {
-                if(board[i][j] === piece) {
-                    return {x: i, y: j};
-                }
-            }
-        }
-        return null;
-    }
-
     function getMoves(piece, position, actualMoves, chaining) {
         let moves = [];
-        // let actualMoves = [];
 
         if(piece?.name === 'King') {
             moves = [{x: position.x - 1, y: position.y - 1},
@@ -222,31 +253,6 @@ function Checkers() {
         }
 
         return actualMoves;
-    }
-
-    function kingMe(piece) {
-        let temp = board;
-        let pos = findPosition(piece);
-
-        temp[pos.x][pos.y].name = 'King';
-        temp[pos.x][pos.y].points = 2;
-
-        setBoard(temp);
-    }
-
-    function checkWinner() {
-        let reds = board.flat().filter(piece => piece?.color === 'red');
-        let blacks = board.flat().filter(piece => piece?.color === 'black');
-
-        if(reds.length <= 0) {
-            setWinner('CPU');
-            return;
-        }
-
-        if(blacks.length <= 0) {
-            setWinner('You');
-            return;
-        }
     }
 
     useEffect(() => {
