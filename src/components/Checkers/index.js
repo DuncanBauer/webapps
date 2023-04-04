@@ -2,11 +2,10 @@ import styles from './Checkers.module.css'
 import { useState, useEffect } from 'react'
 
 class Piece {
-    constructor(color, direction) {
+    constructor(color) {
         this.name = 'Pawn';
         this.color = color;
         this.points = 1;
-        this.direction = direction
     }
 }
 
@@ -21,14 +20,14 @@ function Checkers() {
             color: 'black'
         }
     }
-    const [board, setBoard] = useState([[null, new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1)],
-                                        [new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1), null],
-                                        [null, new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1), null, new Piece('black', 1)],
+    const [board, setBoard] = useState([[null, new Piece('black'), null, new Piece('black'), null, new Piece('black'), null, new Piece('black')],
+                                        [new Piece('black'), null, new Piece('black'), null, new Piece('black'), null, new Piece('black'), null],
+                                        [null, new Piece('black'), null, new Piece('black'), null, new Piece('black'), null, new Piece('black')],
                                         [null, null, null, null, null, null, null, null],
                                         [null, null, null, null, null, null, null, null],
-                                        [new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1), null],
-                                        [null, new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1)],
-                                        [new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1), null, new Piece('red', -1), null]]);
+                                        [new Piece('red'), null, new Piece('red'), null, new Piece('red'), null, new Piece('red'), null],
+                                        [null, new Piece('red'), null, new Piece('red'), null, new Piece('red'), null, new Piece('red')],
+                                        [new Piece('red'), null, new Piece('red'), null, new Piece('red'), null, new Piece('red'), null]]);
     const [cpuTurn, setCpuTurn] = useState(false);
     const [winner, setWinner] = useState(null);
     const [selectedPiece, setSelectedPiece] = useState({x: -1, y: -1});
@@ -68,13 +67,19 @@ function Checkers() {
 
                 // Calculate available moves
                 let piece = board[row][column];
-                moves = getMoves(piece, {x: row, y: column});
+                moves = getMoves(piece, {x: row, y: column}, [], false);
 
                 setAvailableMoves(moves);
             // If you clicked on an empty space that is a valid move
             } else if(board[row][column] === null && availableMoves.some(move => move.x === row && move.y === column)) {
                 // Move the piece
                 movePiece(row, column);
+
+                let chosenMove = availableMoves.filter(move => move.x === row && move.y === column);
+                for(let i = 0; i < chosenMove[0].claimedPieces.length; i++) {
+                    let piece = chosenMove[0].claimedPieces[i];
+                    claimPiece(piece);
+                }
 
                 // Clear available moves
                 setAvailableMoves([]);
@@ -91,10 +96,26 @@ function Checkers() {
             tempBoard[row][column] = piece;
 
             setBoard(tempBoard);
+
+            if(row === 0 && piece.name !== 'King') {
+                kingMe(piece);
+            }
+
             setSelectedPiece(null);
             checkWinner();
             setTimeout(() => setCpuTurn(true), 1000);
         }
+    }
+
+    function claimPiece(piece) {
+        let temp = board;
+        let pos = findPosition(piece);
+
+        if(pos) {
+            temp[pos.x][pos.y] = null;
+        }
+
+        setBoard(temp);
     }
 
     function cpuPlayFn() {
@@ -104,7 +125,7 @@ function Checkers() {
         for (let index = 0; index < blacks.length; index++) {
             const piece = blacks[index];
             const position = findPosition(piece);
-            moves.set(piece, getMoves(piece, position));
+            moves.set(piece, getMoves(piece, position, [], false));
         }
 
         let piecesAbleToMove = Array.from(moves.keys()).filter(value => moves.get(value).length > 0 );
@@ -118,9 +139,19 @@ function Checkers() {
         if(pos) {
             tempBoard[pos.x][pos.y] = null;
             tempBoard[move.x][move.y] = piece;
+
+            if(pos.x === 7 && piece.name !== 'King') {
+                kingMe(piece)
+            }
         }
 
         setBoard(tempBoard);
+
+        for(let i = 0; i < move.claimedPieces.length; i++) {
+            let piece = move.claimedPieces[i];
+            claimPiece(piece);
+        }
+
         setCpuTurn(false);
     }
 
@@ -135,9 +166,9 @@ function Checkers() {
         return null;
     }
 
-    function getMoves(piece, position) {
+    function getMoves(piece, position, actualMoves, chaining) {
         let moves = [];
-        let actualMoves = [];
+        // let actualMoves = [];
 
         if(piece?.name === 'King') {
             moves = [{x: position.x - 1, y: position.y - 1},
@@ -157,21 +188,35 @@ function Checkers() {
             const y = moves[i]?.y;
 
             // If we're moving to an open space
-            if(x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y] === null) {
-                actualMoves.push({x: x, y: y});
+            if(!chaining && x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y] === null) {
+                actualMoves.push({x: x, y: y, claimedPieces: []});
             
             // If the space has an opponent piece on it
-            } else if(x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y]?.color !== piece?.color) {
+            } else if(x <= 7 && x >= 0 && y <= 7 && y >= 0 && board[x][y] && board[x][y]?.color !== piece?.color) {
                 const dx = x - position.x > 0 ? 1 : -1; // determine the direction of the move
                 const dy = y - position.y > 0 ? 1 : -1;
                 
                 let jumpX = dx + x;
                 let jumpY = dy + y;
+
+                if(piece.name === 'King') {
+                    if(actualMoves.some(move => move.x === jumpX && move.y === jumpY)) {
+                        continue;
+                    }
+                }
                 
                 // See if we can jump over it
                 if(jumpX >= 0 && jumpX <= 7 && jumpY >= 0 && jumpY <= 7 && board[jumpX][jumpY] === null) {
-                    actualMoves.push({x: jumpX, y: jumpY});
-                    actualMoves.join(getMoves(piece, {jumpX, jumpY}));
+                    let prevPieces = [];
+                    if(chaining && actualMoves.length > 0) {
+                        prevPieces = actualMoves[actualMoves.length - 1].claimedPieces;
+                    }
+
+                    let pieces = [board[x][y]].concat(prevPieces);
+                    actualMoves.push({x: jumpX, y: jumpY, claimedPieces: pieces});
+
+                    // See if we can chain our jump
+                    actualMoves = actualMoves.concat(getMoves(piece, {x: jumpX, y: jumpY}, actualMoves, true));
                 }
             }
         }
@@ -179,9 +224,19 @@ function Checkers() {
         return actualMoves;
     }
 
+    function kingMe(piece) {
+        let temp = board;
+        let pos = findPosition(piece);
+
+        temp[pos.x][pos.y].name = 'King';
+        temp[pos.x][pos.y].points = 2;
+
+        setBoard(temp);
+    }
+
     function checkWinner() {
-        let reds = board.flat().filter(piece => piece?.color === "red");
-        let blacks = board.flat().filter(piece => piece?.color === "black");
+        let reds = board.flat().filter(piece => piece?.color === 'red');
+        let blacks = board.flat().filter(piece => piece?.color === 'black');
 
         if(reds.length <= 0) {
             setWinner('CPU');
@@ -239,7 +294,7 @@ function Checkers() {
         }
     }
 
-    console.log("RENDER");
+    console.log('RENDER');
 
     return (
         <div>
